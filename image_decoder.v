@@ -1,0 +1,25 @@
+
+module image_decoder (X, Y, lclick, NNin);
+input [8:0] X, Y;
+input lclick;
+output reg [783:0] NNin;
+wire [9:0] C = 10'd0;
+reg [8:0] Nx, Ny;
+wire [9:0] n;
+always @(posedge lclick)
+begin
+     if (C == 0) begin NNin = 784'd0; end else begin
+	  Nx = (X - 15) / 5;
+	  Ny = (Y - 45) /5;
+	  NNin[Nx + ((Ny - 1)*28)] = 1'b1;
+	  end
+end 
+
+endmodule
+
+
+
+	     
+    
+   
+   
