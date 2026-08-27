@@ -1,0 +1,115 @@
+--> precit( [783:0] img, [9:0] digit)
+    ---> {L1(digit,[783:0,[(array of 784 x 64)] l1_beforeAct]) -> actL1(l1_beforeAct, l1res) -> L2(l1res,digit)}
+    --> {L2 -> l2_beforeAct -> l2res -> L3}
+    --> {L3 -> l3_beforeAct -> digit = argmax(l3_beforeAct)}
+
+
+options 1- bitwise operations [model -1/1] x = -1/1 w = -1/1 [VGA -> Normalization 0-255 - -1/1]
+
+[xnor-popcount-before
+ activation
+ argmax
+ Normalization
+ Matrix handling]
+
+1- integers handling
+2- 2D arrays handing 
+
+//////////////////////////////////////////////////// Core logic templete //////////////////////////////////
+
+module precit(img,digit);
+    input [783:0] img;
+    output [3:0] digit;
+
+    wire [63:0] x [783:0];
+    L1 l1 (img,x);
+
+    wire [31:0] x2 [783:0];
+    L2 l2 (x,x2);
+
+    wire [25087:0] x2_final;
+    flatten flat (x2,x2_final);
+
+    wire [9:0] out;
+    L3 l3 (x2_final,out);
+
+    argmax max (out,digit);
+endmodule;
+
+
+module L1(img, x);
+    input [783:0] img ;
+    output [63:0] x [783:0];
+
+    localparam [63:0] W1 = {};
+    integer i,j =0;
+
+    always @(*) begin
+        for (i=0; i<784; i=i+1) begin
+            for(j=0; j<64; j= j+1) begin
+                x[i][j] = ~(img[i][0] ^ W1[0][j]);
+        end
+    end
+endmodule
+
+
+
+module L2(x,x2);
+   input x [783:0][63:0];
+   output x2 [783:0][31:0];
+
+    localparam W2 [63:0][31:0] = {};
+    localparam N = 64;
+
+    integer i,j =0;
+    integer sum =0;
+    always @(*) begin
+        for (i=0; i<783; i=i+1) begin
+            for (j=0; j<63; j=j+1) begin
+                sum = sum + ~(x[i][j] ^ W2[j][i]);
+            end
+            x2[i][j] = ((2 * sum - N)=>0)? 1 : 0;
+            sum =0;
+        end
+    end
+endmodule
+
+module L3(x_flat,out);
+   input [25087:0] x_flat;
+   output [9:0] out ;
+
+    localparam W3 [25087:0][9:0] = {};
+    localparam N = 25087;
+
+    integer i,j =0;
+    integer sum =0;
+    always @(*) begin
+        for (i=0; i<9; i=i+1) begin
+            for (j=0; j<25087; j=j+1) begin
+                sum = sum + ~(x_flat ^ W3[j][i]);
+            end
+            out[i] = (2 * sum - N);
+            sum =0;
+        end
+    end
+endmodule
+
+
+module argmax(out,digit);
+    input [9:0] out;
+    output [3:0] digit;
+
+    integer max, maxIndex =0;
+    integer index =0;
+
+    always @(*) begin
+        for(index; index<9; index = index+1) begin
+            if(out[index] > max)begin
+                max = out[index];
+                maxIndex = index;
+            end
+        end
+    end
+
+    assign digit = index;
+endmodule
